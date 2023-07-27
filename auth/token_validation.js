@@ -8,7 +8,7 @@ module.exports = {
         let token = req.get('authorization');
         if(token) {
             token = token.slice(7);
-            verify(token, process.env.SECRET_KEY, (err, decoded) => {
+            verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
                 if(err){
                     res.json({
                         success: 0,

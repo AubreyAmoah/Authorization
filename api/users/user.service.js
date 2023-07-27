@@ -1,3 +1,4 @@
+const { compare } = require('bcrypt');
 const pool = require('../../config/database');
 
 
@@ -13,6 +14,23 @@ module.exports = {
                 data.email,
                 data.password,
                 data.number,
+            ],
+            (error, results, fields) => {
+                if(error) {
+                  return callBack(error);
+                }
+
+                return callBack(null, results);
+            }
+        )
+    },
+    createRefreshToken: (email,refreshToken, callBack) => {
+        pool.query(
+            `insert into refresh_tokens(email,token)
+                        values(?,?)`,
+            [
+                email,
+                refreshToken
             ],
             (error, results, fields) => {
                 if(error) {
@@ -93,5 +111,43 @@ module.exports = {
                 return callBack(null, results[0]);
             }
         )
+    },
+    getOtherUsers: (email, callBack) => {
+        pool.query(
+            `select * from registration where email != ?`,
+            [email],
+            (error, results, fields) => {
+                if (error) {
+                    callBack(error);
+                }
+                return callBack(null, results[0]);
+            }
+        )
+    },
+    compareRefreshToken: (token, callBack) => {
+        pool.query(
+            `select * from refresh_tokens where token = ?`,
+            [token],
+            (error, results, fields) => {
+                if (error){
+                    callBack(error);
+                }
+
+                return callBack(null, results);
+            }
+            )
+    },
+    deleteRefreshToken: (token, callBack) => {
+        pool.query(
+            `delete from refresh_tokens where token = ?`,
+            [token],
+            (error, results, fields) => {
+                if (error){
+                    callBack(error);
+                }
+
+                return callBack(null, results);
+            }
+            )
     }
 }

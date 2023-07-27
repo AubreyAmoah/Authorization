@@ -1,4 +1,4 @@
-const { create, getUserByUserId, getUsers, updateUser, deleteUser, getUserByUserEmail } = require('./user.service');
+const { create, createRefreshToken, getUserByUserId, getUsers, updateUser, deleteUser, getUserByUserEmail, getOtherUsers } = require('./user.service');
 const { genSaltSync, hashSync, compareSync} = require('bcrypt');
 const { sign } = require('jsonwebtoken');
 const dotenv = require('dotenv');
@@ -120,14 +120,32 @@ module.exports = {
             const result = compareSync(body.password, results.password);
             if (result) {
                 results.password = undefined;
-                const jsontoken = sign({ result: results}, process.env.SECRET_KEY,{
+                const jsontoken = sign({ result: results}, process.env.ACCESS_TOKEN_SECRET,{
                     expiresIn: '1h'
                 });
-                return res.json({
-                    success: 1,
-                    message: 'login successfully',
-                    token: jsontoken
+                const refreshtoken = sign({ result: results}, process.env.REFRESH_TOKEN_SECRET,{
+                    expiresIn: '1d'
                 });
+
+                createRefreshToken(results.email, refreshtoken, (err, results) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                    if (!results) {
+                        return res.json({
+                            success: 0,
+                            data: 'Could not save refresh tokens'
+                        });
+                    }
+
+                    res.cookie('jwt', refreshtoken, { httpOnly: true, sameSite:'None', secure: true, maxAge: 24 * 60 * 60 * 1000});
+
+                    return res.json({
+                        success: 1,
+                        message: 'login successfully',
+                        token: jsontoken
+                    });
+                })
             } else {
                 return res.json({
                     success: 0,
